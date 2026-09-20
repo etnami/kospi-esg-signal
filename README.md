@@ -88,4 +88,4 @@ esg-social-indicators-ml/
 
 ## Verification note
 
-The Stage 1 LLM extraction accuracy numbers above (95.8%, 4.5%, MAE 0.796 / 2,631,446, ICC 0.0164) were independently recomputed directly from `extraction_log.xlsx` rather than taken from the dissertation text, and matched exactly. The RQ2 regression coefficients and the "quartile reversal" pattern were cross-checked against the corresponding figures in the dissertation and matched. This followed from a lesson learned on an earlier repo in this portfolio, where a result had been misattributed between two similarly-named model variants (see the other repos in this portfolio for that story).
+The Stage 1 LLM extraction accuracy numbers above (95.8%, 4.5%, MAE 0.796 / 2,631,446, ICC 0.0164) were independently recomputed directly from `extraction_log.xlsx` rather than taken from the dissertation text, and matched exactly. The RQ2 regression coefficients and the "quartile reversal" pattern were cross-checked against the corresponding figures in the dissertation and matched.
