@@ -1,17 +1,17 @@
 # Predicting Social ESG Standing in KOSPI-Listed Korean Firms: ML + LLM-Assisted Data Extraction
 
-MSc Data Science dissertation (University of Sheffield). Extends a 55-firm Korean employment-ESG database to 74 firms using LLM-assisted extraction from company disclosures, formally compares two LLMs' extraction accuracy against verified ground truth, then uses four ML models to identify which employment indicators most robustly predict a firm's composite Social ESG rank, and tests whether that rank relates to share price.
+MSc Data Science dissertation (University of Sheffield, 2026), Grade: XX (Not Yet Released). Extends a 55-firm Korean employment-ESG database to 74 firms using LLM-assisted extraction from company disclosures, formally compares two LLMs' extraction accuracy against manually verified values, then uses four ML models to identify which employment indicators most robustly predict a firm's composite Social ESG rank, and tests whether that rank relates to share price.
 
-> **Reproducibility note:** the LLM extraction accuracy analysis (`extraction_log.xlsx`, included) is fully runnable as-is. The ML modelling pipeline (RQ1/RQ2) is not runnable from this repo alone; it needs two source data files that aren't redistributed here for licensing reasons (see Data, below). The code and verified results are still fully readable and auditable; you just can't `git clone` and rerun the whole thing end-to-end.
+> **Reproducibility note:** the LLM extraction accuracy analysis (`extraction_log.xlsx`, included) is fully runnable as-is. The ML modelling pipeline (RQ1/RQ2) is not runnable from this repo alone; it needs two source data files that aren't redistributed here for licensing reasons (see Data, below). The code and results are still readable and auditable; you just can't `git clone` and rerun the whole thing end-to-end. The LLM extraction itself (June-July 2026, consumer web interfaces, temperature not fixed) cannot be exactly reproduced.
 
 ## Key results
 
 **LLM extraction accuracy (Claude Sonnet 5 vs DeepSeek-R1), independently reproduced from the raw extraction log:**
 
-| Metric (vs. verified ground truth) | Claude Sonnet 5 | DeepSeek-R1 |
+| Metric | Claude Sonnet 5 | DeepSeek-R1 |
 |---|---|---|
 | Exact-match rate | **95.8%** | 4.5% |
-| MAE | 0.796 | 2,631,446* |
+| MAE (vs. verified values) | 0.796 | 2,631,446* |
 | Inter-model ICC (consistency) | 0.0164 (95% CI [−0.09, 0.12]); essentially no agreement | |
 
 \* DeepSeek's MAE is inflated by the KRW-denominated Annual Pay indicator, not representative of its typical error size.
@@ -29,7 +29,7 @@ Claude reproduced 100% of values correctly for 14 of the 19 newly-extracted comp
 | Random Forest | RMSE 14.160, R² 0.566 | RMSE 19.441, R² 0.183 |
 | XGBoost | **RMSE 13.306, R² 0.612** | RMSE 18.894, R² 0.218 |
 
-XGBoost is the best-performing model on the primary (Set A) specification. The two regularised linear models collapse to negative R² on the single-year Set B data (worse than a mean-prediction baseline) while the tree-based models degrade more gracefully, attributable to Set B's larger, more unevenly distributed missingness rather than an underlying distributional problem in the predictors themselves.
+XGBoost is the best-performing model on the primary (Set A) specification. The two regularised linear models collapse to negative R² on the single-year Set B data (worse than a mean-prediction baseline) while the tree-based models degrade more gracefully, consistent with Set B's larger, more unevenly distributed missingness.
 
 Seven indicators were selected/highly-ranked by **all four** Set A models: `TrainingHours`, `ContractNewHiresPct`, `ParentalLeaveF`, `NonKoreanCount`, `ParentalLeaveM`, `TrainingBudget`, `FemalePermanentPct`. Three more (`LTIFR`, `ContractWorkersPct`, `DisabilitiesCount`) were robust across exactly 3 of 4.
 
@@ -37,7 +37,7 @@ Seven indicators were selected/highly-ranked by **all four** Set A models: `Trai
 
 **RQ2: does Social ESG rank relate to share price?**
 
-No. OLS regression of December 2022 share price on `OverallRank` (N = 46): β = 0.706, R² = 0.017, p = .395; not statistically significant, and the relationship isn't even monotonic when firms are grouped into ESG quartiles (the 2nd-best quartile shows the highest 2021 share-price growth, not the best quartile).
+No. OLS regression of December 2022 share price on `OverallRank` (N = 46): β = 0.706 (95% CI [−0.95, 2.36]), R² = 0.017, p = .395: not statistically significant. `OverallRank` runs from 1 (best) to 74 (worst), so the slightly positive slope means share price rose marginally as ESG performance worsened, but it is far too weak and imprecise to support any direction. In a post hoc grouping into ESG quartiles the pattern is not monotonic (the 2nd-best quartile shows the highest 2021 share-price growth, not the best quartile), which a linear model cannot detect.
 
 ![Social ESG rank vs share price, OLS regression fit](figures/rq2_esg_vs_shareprice.png)
 
@@ -47,14 +47,14 @@ No. OLS regression of December 2022 share price on `OverallRank` (N = 46): β = 
 
 - **Language:** R 4.5.1
 - **LLM extraction accuracy:** exact-match rate, MAE (with/without a KRW-scale outlier indicator), close-match rate, intraclass correlation (`irr` package, two-way consistency ICC)
-- **RQ1 modelling:** Lasso & Elastic Net (`glmnet`, LOOCV lambda selection), Random Forest (`ranger`, permutation importance, OOB error), XGBoost (`xgboost`, CV-tuned hyperparameters + manual LOOCV evaluation)
+- **RQ1 modelling:** Lasso & Elastic Net (`glmnet`, LOOCV lambda selection), Random Forest (`ranger`, permutation importance; hand-written grid search over `mtry` and `min.node.size`, tuned on out-of-bag error), XGBoost (`xgboost`; hand-written grid search over `max_depth`, `eta` and `subsample` with 10-fold CV and early stopping, then a manual LOOCV evaluation)
 - **RQ2:** OLS regression with HC3 robust SEs, Breusch-Pagan and Shapiro-Wilk diagnostics, Cook's distance
 - Full package list and roles: see `README_esg_project_code.md`
 
 ## Repo structure
 
 ```
-esg-social-indicators-ml/
+kospi-esg-signal/
 ├── README.md                                  ← you are here
 ├── esg_project_code.R                          ← full analysis pipeline
 ├── README_esg_project_code.md                  ← detailed code-level README (sections, packages, outputs)
@@ -81,11 +81,14 @@ esg-social-indicators-ml/
 
 ## Limitations
 
-- RQ2's null result is based on N = 46 (a near-census rather than a probability sample), so the wide confidence interval is consistent with a true relationship anywhere from weakly negative to small positive; this is a data-driven inconclusiveness, not strong evidence of "no relationship."
+- RQ2's null result is based on N = 46 (a near-census of the KOSPI-100 rather than a probability sample), so the wide confidence interval is consistent with a small positive, null or weakly negative relationship; this is inconclusive, not strong evidence of "no relationship." Share price is a single point-in-time level (December 2022), not returns, and the quartile pattern was found post hoc.
 - Two of the four RQ1 models (Lasso, Elastic Net) fail outright on the single-year Set B specification; the year-summed Set A specification is the primary, more reliable result.
 - The RQ1 model performance table (Set A/B RMSE and R²) is reported as it appears in the dissertation and is structurally consistent with how the script computes it (LOOCV via `cv.glmnet` for Lasso/EN, OOB for Random Forest, a manual LOOCV loop for XGBoost), but since the raw dataset isn't bundled here, these specific figures weren't independently re-run from scratch the way the Stage 1 LLM accuracy numbers were (see Verification note below).
-- One minor inconsistency worth flagging: a code comment in `esg_project_code.R` prints "ICC = 0.0163" while the actual computed value (and the value reported in the dissertation) is 0.0164, a trivial rounding-level discrepancy rather than a substantive error, but noted for transparency.
-
+- "Verified" values are source-checked only for the 351 comparisons where the two models differed by 5% or more. Where they agreed within 5%, Claude's value was kept without checking, and 11 inconclusive cases also defaulted to Claude. A single researcher did the checking, so the 95.8% is not fully independent of Claude's own outputs and is assumed to generalise to firms that were not manually verified.
+- RQ1 shows indicator importance within the composite's own construction, not an independent external test: `OverallRank` is partly built from the same 24 employment indicators used to predict it.
+- Validation is mixed: LOOCV for Lasso, Elastic Net and XGBoost, out-of-bag error for Random Forest. The two are not procedurally identical, so differences between models (for example Random Forest's R² of 0.566 against Lasso's 0.497) cannot be attributed to the algorithm alone.
+- Random Forest and XGBoost hyperparameters were tuned on the same 74 firms used for the reported performance, with no separate validation layer, so their R² values are likely slightly optimistic. Imputation and standardisation were also computed once on the full sample before LOOCV, a minor simplification noted in the dissertation.
+  
 ## Verification note
 
 The Stage 1 LLM extraction accuracy numbers above (95.8%, 4.5%, MAE 0.796 / 2,631,446, ICC 0.0164) were independently recomputed directly from `extraction_log.xlsx` rather than taken from the dissertation text, and matched exactly. The RQ2 regression coefficients and the "quartile reversal" pattern were cross-checked against the corresponding figures in the dissertation and matched.
