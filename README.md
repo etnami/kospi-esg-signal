@@ -54,7 +54,7 @@ No. OLS regression of December 2022 share price on `OverallRank` (N = 46): β = 
 ## Repo structure
 
 ```
-01-esg-social-indicators-ml/
+esg-social-indicators-ml/
 ├── README.md                                  ← you are here
 ├── esg_project_code.R                          ← full analysis pipeline
 ├── README_esg_project_code.md                  ← detailed code-level README (sections, packages, outputs)
